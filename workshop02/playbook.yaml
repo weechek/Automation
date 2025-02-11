@@ -1,0 +1,94 @@
+- name: Setup my server
+  vars:
+   code_server_password: abc123
+   code_server_domain : "code-{{ansible_host}}.nip.io"
+  hosts: all
+  tasks:
+  - name: Install nginx
+    apt:
+     update_cache: yes
+     name: "{{item.name}}"
+     state: "{{item.to_install}}"
+    loop:
+    - name: nginx
+      to_install: present
+    - name: zip
+      to_install: present
+
+  - name: Start nginx
+    systemd:
+     daemon-reload: true
+     name: nginx
+     enabled: true
+     state: started
+
+  - name: Create Code Server Directory
+    file:
+     path: /usr/local/opt/code-server
+     state: directory
+
+  - name: Download the zip file from the remote site
+    get_url:
+     url: https://github.com/coder/code-server/releases/download/v4.96.4/code-server-4.96.4-linux-amd64.tar.gz
+     dest: /tmp/code-server-4.96.4-linux-amd64.tar.gz
+     validate_certs: no
+
+  - name: Unpack Code Server
+    unarchive:
+     src: /tmp/code-server-4.96.4-linux-amd64.tar.gz
+     dest: /usr/local/opt/code-server
+     creates: /usr/local/opt/code-server
+     remote_src: yes
+     extra_opts:
+          - '--strip-components=1'  # Removes the top-level directory in the archive
+
+  - name: Symbolic link /usr/local/opt/code-server to /usr/lib/code-server
+    shell : ln -s /usr/local/opt/code-server /usr/lib/code-server
+    args:
+        creates: /usr/lib/code-server
+  
+  - name: Symbolic link /usr/local/opt/code-server/bin/code-server to /usr/bin/code-server
+    shell : ln -s /usr/local/opt/code-server/bin/code-server /usr/bin/code-server
+    args:
+        creates: /usr/bin/code-server
+
+  - name: Create Code Server Lib Directory
+    file:
+     path: /var/lib/code-server
+     state: directory
+
+  - name: Create service file
+    template: 
+     src: code-server.service.j2
+     dest: /lib/systemd/system/code-server.service
+
+  - name: Start Code Server Service
+    systemd:
+     daemon-reload: true
+     name: code-server
+     enabled: true
+     state: started
+  
+  - name: Install nginx
+    apt:
+     update_cache: yes
+     name: "nginx"
+     state: "present"
+
+  - name: Update nginx config file
+    template: 
+     src: code-server.conf.j2
+     dest: /etc/nginx/sites-available/code-server.conf
+
+  - name: Symbolic link code-server.conf to /etc/nginx/sites-enabled/code-server.conf
+    shell : ln -s /etc/nginx/sites-available/code-server.conf /etc/nginx/sites-enabled/code-server.conf
+    args:
+        creates: /etc/nginx/sites-enabled/code-server.conf
+  - name: Start nginx
+    systemd:
+      daemon-reload: true
+      name: nginx
+      enabled: true
+      state: restarted
+
+     
