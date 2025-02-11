@@ -1,6 +1,5 @@
 - name: Setup my server
   vars:
-   code_server_password: abc123
    code_server_domain : "code-{{ansible_host}}.nip.io"
   hosts: all
   tasks:
