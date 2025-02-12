@@ -1,0 +1,28 @@
+- name: Setup my server
+  hosts: all
+  tasks:
+  - name: Install nginx
+    apt:
+     update_cache: yes
+     name: "{{item.name}}"
+     state: "{{item.to_install}}"
+    loop:
+    - name: nginx
+      to_install: present
+    - name: zip
+      to_install: present
+  - name: Copy HTML content to /var/www/html 
+    unarchive:
+     src: assets.zip
+     dest: /var/www/html
+  - name: Start nginx
+    systemd:
+     daemon-reload: true
+     name: nginx
+     enabled: true
+     state: started
+  - name: Software Installed
+    template: packages_installed.txt.j2
+    dest: packages_installed.txt
+  
+     

@@ -1,0 +1,13 @@
+all:
+ vars:
+  ansible_user: fred
+  ansible_connection: ssh
+  ansible_ssh_private_key_file: ${private_key_path}
+ hosts:
+  myserver:
+   ansible_host: ${droplet_ip}
+   pkgs_to_install:
+    - name: nginx
+      to_install: present
+    - name: zip
+      to_install: present
